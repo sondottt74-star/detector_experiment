@@ -36,6 +36,18 @@ def run_3dgs(video, gaussian_repo, work_dir, model_dir, sam2_repo, sam_checkpoin
     render_reference(gaussian_repo, clean_model_dir, references_dir, reference_count, iterations)
 
 
+def _config_name(config, sam2_repo):
+    """Convert a local SAM2 config path to Hydra's package-relative name."""
+    config = Path(config)
+    sam2_repo = Path(sam2_repo)
+    if config.is_absolute():
+        try:
+            config = config.relative_to(sam2_repo / "sam2")
+        except ValueError:
+            pass
+    return config.as_posix()
+
+
 def clean_mask(mask):
     import cv2
     import numpy as np
@@ -63,7 +75,9 @@ def segment_model(frames_dir, masks_dir, sam2_repo, checkpoint, config):
     frames = sorted(Path(frames_dir).glob("*.jpg"))
     output = Path(masks_dir)
     output.mkdir(parents=True, exist_ok=True)
-    predictor = build_sam2_video_predictor(config, str(checkpoint), device="cuda")
+    predictor = build_sam2_video_predictor(
+        _config_name(config, sam2_repo), str(checkpoint), device="cuda"
+    )
     with tempfile.TemporaryDirectory(prefix="can_frames_") as staging:
         staging = Path(staging)
         for index, frame in enumerate(frames):
