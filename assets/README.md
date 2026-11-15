@@ -32,8 +32,8 @@ grounding_dino_tiny → IDEA-Research/grounding-dino-tiny
 先运行仓库根目录的 `prepare_data.py`，再使用 ModelScope 的可写 AccessToken 上传：
 
 ```bash
-python assets/upload_clean_dataset.py \
-  --folder /path/to/can_detect_clean \
+python assets/upload_raw_dataset.py \
+  --folder /path/to/can_detect_raw \
   --token YOUR_MODELSCOPE_ACCESS_TOKEN \
   --repo-id Sondottt/can_detect
 ```

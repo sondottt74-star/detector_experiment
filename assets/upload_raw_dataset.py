@@ -1,4 +1,4 @@
-"""上传整理后的 can_detect 数据集，不下载任何模型或数据。"""
+"""上传只含原始输入的 can_detect 数据集，不下载任何模型或数据。"""
 
 import argparse
 

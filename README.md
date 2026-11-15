@@ -116,14 +116,14 @@ python reconstruction.py \
 
 ## 重构数据集
 
-附件目录是交付包索引，完整文件位于工作区的 `can-dataset-s43/experiment_data_s43_20261020`。整理脚本只复制实验需要的图像、掩码、标注、3DGS 参考图和五折清单，并把 13 个易拉罐名称统一成拼音目录名。
+附件目录是交付包索引，完整文件位于工作区的 `can-dataset-s43/experiment_data_s43_20261020`。整理脚本只复制原始图像、原始 LabelMe 标注和建库/待测输入清单，并把 13 个易拉罐名称统一成拼音目录名；不会复制现成参考库或任何已生成掩码。
 
 ```bash
 python prepare_data.py \
   --source /path/to/experiment_data_s43_20261020 \
-  --output /path/to/can_detect_clean
+  --output /path/to/can_detect_raw
 ```
 
-输出目录可以直接作为 ModelScope 数据集 `Sondottt/can_detect` 上传；`splits/fold1.jsonl` 到 `fold5.jsonl` 中的路径均相对于数据集根目录。
+输出目录可以作为 ModelScope 数据集 `Sondottt/can_detect` 上传；`manifests/reference_inputs.jsonl` 是 3DGS 建库原始输入，`manifests/query_inputs.jsonl` 是全部待测图原始输入，路径均相对于数据集根目录。
 
 `assets/` 只保存 ModelScope 下载代码，不保存权重或数据集。下载脚本中的三个模型分别对应 `can_detect` 的 DINOv2 ViT-S/14、SAM2.1 Hiera B+ 和 Grounding DINO Tiny。
