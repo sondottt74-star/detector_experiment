@@ -1,3 +1,5 @@
+"""读取待测图、正常参考图和对应掩码。"""
+
 import torch
 from torch.utils.data import Dataset
 
@@ -14,6 +16,7 @@ class ReferenceDataset(Dataset):
 
     def __getitem__(self, index):
         record = self.records[index]
+        # manifest 中的 references 与 reference_masks 按同一顺序配对。
         query = load_rgb(record["query"], self.image_size)
         references = torch.stack(
             [load_rgb(path, self.image_size) for path in record["references"]]

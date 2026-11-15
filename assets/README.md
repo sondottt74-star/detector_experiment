@@ -15,17 +15,18 @@ python assets/download_modelscope_models.py \
 
 ```bash
 python assets/download_modelscope_models.py \
-  --model dinov2 \
+  --model dinov2_vits14 \
   --output-root assets/pretrained
 ```
 
 当前代码中的 ModelScope 模型 ID：
 
 ```text
-facebook/dinov2-small
-facebook/sam2.1-hiera-base-plus
-muse/grounding-dino-base
+dinov2_vits14 → facebook/dinov2-small
+sam2.1_hiera_b_plus → facebook/sam2.1-hiera-base-plus
 ```
+
+`can_detect` 使用的 Grounding DINO 是 `grounding-dino-tiny`。目前没有确认到对应的 ModelScope Tiny 仓库，因此这里不把 `muse/grounding-dino-base` 当作替代模型。
 
 ## 下载 MVTec AD
 

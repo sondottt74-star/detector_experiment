@@ -1,3 +1,5 @@
+"""本地 DINOv2 加载和图像掩码预处理。"""
+
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -14,6 +16,7 @@ class LocalDINOv2(nn.Module):
         self.network = network
 
     def forward(self, pixel_values):
+        # 将官方 DINOv2 的输出整理成 Detector 使用的 last_hidden_state。
         features = self.network.forward_features(pixel_values)
         tokens = torch.cat(
             (features["x_norm_clstoken"][:, None], features["x_norm_patchtokens"]),
@@ -23,6 +26,7 @@ class LocalDINOv2(nn.Module):
 
 
 def load_local_dinov2(repo_dir, weights_path):
+    # 只从本地官方仓库和本地权重加载，不触发在线下载。
     network = torch.hub.load(
         str(repo_dir),
         "dinov2_vits14",
@@ -42,12 +46,14 @@ def load_rgb(path, image_size):
     image = Image.open(path).convert("RGB")
     image = image.resize((image_size, image_size), Image.Resampling.BICUBIC)
     image = torch.from_numpy(np.asarray(image)).permute(2, 0, 1).float() / 255
+    # 使用 DINOv2 的 ImageNet 归一化参数。
     mean = torch.tensor([0.485, 0.456, 0.406])[:, None, None]
     std = torch.tensor([0.229, 0.224, 0.225])[:, None, None]
     return (image - mean) / std
 
 
 def load_mask(path, image_size):
+    # 掩码使用最近邻缩放，避免产生灰色边界。
     mask = Image.open(path).convert("L")
     mask = mask.resize((image_size, image_size), Image.Resampling.NEAREST)
     return torch.from_numpy(np.asarray(mask)).float().div(255).unsqueeze(0)

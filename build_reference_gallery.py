@@ -1,3 +1,5 @@
+"""从清理后的 3DGS 模型渲染正常参考图库。"""
+
 import argparse
 import json
 import math
@@ -20,6 +22,7 @@ def orthogonalize(matrix):
 
 
 def interpolate_cameras(cameras, count):
+    # 在相邻相机之间线性插值，生成密集的正常视角。
     cameras = sorted(cameras, key=lambda item: item["img_name"])
     total = len(cameras)
     views = []
@@ -110,6 +113,7 @@ def build_gallery(gaussian_repo, model_dir, output_dir, views, max_side, iterati
     white = torch.ones((gaussian.get_xyz.shape[0], 3), device="cuda")
     records = []
 
+    # 同一相机渲染 RGB 图和全白高斯图，后者用于得到前景轮廓。
     with torch.inference_mode():
         for view in views:
             camera, width, height = make_camera(view, max_side, MiniCam)

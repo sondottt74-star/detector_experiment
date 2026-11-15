@@ -1,3 +1,5 @@
+"""从 ModelScope 下载 MVTec AD 数据集。"""
+
 import argparse
 from pathlib import Path
 
@@ -5,6 +7,7 @@ from modelscope import dataset_snapshot_download
 
 
 def download_mvtec_ad(dataset_id, output_dir):
+    # dataset_id 使用 ModelScope 上实际存在的 namespace/name。
     return dataset_snapshot_download(
         dataset_id=dataset_id,
         local_dir=str(Path(output_dir)),

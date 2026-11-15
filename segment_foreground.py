@@ -1,3 +1,5 @@
+"""用本地 SAM2 从待测图中提取易拉罐前景。"""
+
 import argparse
 import json
 from pathlib import Path
@@ -22,6 +24,7 @@ def segment_directory(input_dir, output_dir, sam2_repo, checkpoint, config, box)
     records = []
 
     for image_path in sorted(input_dir.glob("*")):
+        # 用固定比例框和罐体内部正点提示 SAM2。
         image = Image.open(image_path).convert("RGB")
         image_array = np.asarray(image)
         height, width = image_array.shape[:2]

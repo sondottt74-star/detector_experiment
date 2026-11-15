@@ -1,3 +1,5 @@
+"""从正常视频训练一个用于生成参考视角的 3DGS 模型。"""
+
 import argparse
 import os
 from pathlib import Path
@@ -11,6 +13,7 @@ def build_3dgs(video, gaussian_repo, work_dir, model_dir, ffmpeg, colmap, gpu, f
     frames_dir = work_dir / "input"
     frames_dir.mkdir(parents=True, exist_ok=True)
 
+    # 先从正常视频抽帧，再交给 3DGS 官方脚本完成 COLMAP 和训练。
     subprocess.run(
         [
             ffmpeg,

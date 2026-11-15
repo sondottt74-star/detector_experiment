@@ -1,3 +1,5 @@
+"""Detector 的训练、验证和预测输出。"""
+
 import json
 from pathlib import Path
 
@@ -7,6 +9,7 @@ from torch.nn import functional as F
 
 
 def loss_fn(pixel_logits, image_logits, target_mask, query_mask, labels):
+    # 像素 BCE、区域 Dice 和整图分类共同训练检测器。
     pixel_loss = F.binary_cross_entropy_with_logits(
         pixel_logits, target_mask, reduction="none"
     )
@@ -24,6 +27,7 @@ def run_epoch(model, loader, optimizer, device, training):
     model.train(training)
     total_loss = 0.0
     for batch in loader:
+        # batch 顺序与 ReferenceDataset 的返回顺序一致。
         query, references, query_mask, reference_masks, target_mask, labels = [
             item.to(device) for item in batch
         ]
@@ -51,6 +55,7 @@ def fit(model, train_loader, val_loader, optimizer, device, epochs, save_dir, lo
     history = []
     best_loss = float("inf")
     for epoch in range(epochs):
+        # 每个 epoch 先训练，再用验证集选择最优权重。
         train_loss = run_epoch(model, train_loader, optimizer, device, True)
         val_loss = run_epoch(model, val_loader, optimizer, device, False)
         record = {
@@ -75,6 +80,7 @@ def save_predictions(model, loader, device, output_dir):
     model.eval()
     with torch.no_grad():
         for index, batch in enumerate(loader):
+            # 保存像素热力图和整图异常分数，供后续可视化或评估使用。
             query, references, query_mask, reference_masks, _, _ = [
                 item.to(device) for item in batch
             ]

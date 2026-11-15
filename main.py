@@ -1,3 +1,5 @@
+"""Detector 实验入口。"""
+
 import argparse
 from pathlib import Path
 
@@ -31,6 +33,7 @@ def main():
     train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
     val_loader = DataLoader(val_set, batch_size=args.batch_size, shuffle=False)
 
+    # DINOv2 从本地官方代码和权重加载，Detector 只训练新增模块。
     encoder = load_local_dinov2(args.dino_repo, args.dino_weights)
     model = Detector(encoder).to(args.device)
     optimizer = torch.optim.AdamW(
