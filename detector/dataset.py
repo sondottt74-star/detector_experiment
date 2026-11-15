@@ -3,7 +3,7 @@
 import torch
 from torch.utils.data import Dataset
 
-from utils import load_mask, load_rgb, read_jsonl
+from .utils import load_mask, load_rgb, read_jsonl
 
 
 class ReferenceDataset(Dataset):
