@@ -63,10 +63,15 @@ def main():
     train, val = [], []
     for brand, brand_rows in sorted(by_brand.items()):
         groups = sorted({row["can_id"] for row in brand_rows})
-        train_group_count = max(1, int(len(groups) * 0.7))
-        train_groups = set(groups[:train_group_count])
+        group_anomalies = {
+            group: sum(row["label"] == 1 for row in brand_rows if row["can_id"] == group)
+            for group in groups
+        }
+        val_group_count = max(1, int(len(groups) * 0.3))
+        val_groups = set(sorted(groups, key=lambda group: (-group_anomalies[group], group))[:val_group_count])
+        train_groups = set(groups) - val_groups
         train_rows = [row for row in brand_rows if row["can_id"] in train_groups]
-        val_rows = [row for row in brand_rows if row["can_id"] not in train_groups]
+        val_rows = [row for row in brand_rows if row["can_id"] in val_groups]
         refs = [row for row in train_rows if row["label"] == 0]
         if not refs:
             refs = [row for row in brand_rows if row["label"] == 0]
