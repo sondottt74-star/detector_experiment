@@ -11,6 +11,8 @@ MODEL_IDS = {
     "dinov2_vits14": "facebook/dinov2-small",
     # can_detect 的配置是 sam2.1_hiera_b+。
     "sam2.1_hiera_b_plus": "facebook/sam2.1-hiera-base-plus",
+    # can_detect 的 object_detector 配置是 grounding-dino-tiny。
+    "grounding_dino_tiny": "IDEA-Research/grounding-dino-tiny",
 }
 
 

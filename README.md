@@ -94,4 +94,4 @@ python segment_foreground.py \
 `build_reference_gallery.py` 输出参考图、参考掩码和 `references.json`；
 `segment_foreground.py` 输出待测图前景掩码和 `foreground.jsonl`。两个脚本都只读取本地仓库和本地权重。
 
-`assets/` 只保存 ModelScope 下载代码，不保存权重或数据集。下载脚本中的 DINOv2 和 SAM2 对应 `can_detect` 的 ViT-S/14 与 Hiera B+；Grounding DINO Tiny 暂无确认的 ModelScope 同名仓库，因此不使用 Base 代替。
+`assets/` 只保存 ModelScope 下载代码，不保存权重或数据集。下载脚本中的三个模型分别对应 `can_detect` 的 DINOv2 ViT-S/14、SAM2.1 Hiera B+ 和 Grounding DINO Tiny。
