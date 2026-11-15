@@ -19,6 +19,11 @@ detector_experiment/
 ├── trainer.py
 ├── utils.py
 ├── main.py
+├── build_3dgs.py
+├── build_reference_gallery.py
+├── segment_foreground.py
+├── references/
+├── masks/
 ├── output/
 ├── save/
 └── log/
@@ -51,3 +56,39 @@ python main.py \
   --dino-repo /path/to/dinov2/repo \
   --dino-weights /path/to/dinov2_vits14_pretrain.pth
 ```
+
+## build inputs
+
+从正常视频训练本地 3DGS：
+
+```bash
+python build_3dgs.py \
+  --video /path/to/normal.mp4 \
+  --gaussian-repo /path/to/gaussian-splatting \
+  --work-dir /path/to/work/can \
+  --model-dir /path/to/models/can
+```
+
+从 3DGS 模型渲染正常参考图库：
+
+```bash
+python build_reference_gallery.py \
+  --gaussian-repo /path/to/gaussian-splatting \
+  --model-dir /path/to/models/can \
+  --output-dir references/can \
+  --views 720
+```
+
+对待测图提取 SAM2 前景：
+
+```bash
+python segment_foreground.py \
+  --input-dir /path/to/query_images \
+  --output-dir masks/query \
+  --sam2-repo /path/to/sam2 \
+  --checkpoint /path/to/sam2_checkpoint.pt \
+  --config /path/to/sam2/configs/sam2.1/sam2.1_hiera_b+.yaml
+```
+
+`build_reference_gallery.py` 输出参考图、参考掩码和 `references.json`；
+`segment_foreground.py` 输出待测图前景掩码和 `foreground.jsonl`。两个脚本都只读取本地仓库和本地权重。
