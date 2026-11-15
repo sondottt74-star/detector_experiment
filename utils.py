@@ -25,8 +25,15 @@ class LocalDINOv2(nn.Module):
         return SimpleNamespace(last_hidden_state=tokens)
 
 
-def load_local_dinov2(repo_dir, weights_path):
-    # 只从本地官方仓库和本地权重加载，不触发在线下载。
+def load_local_dinov2(repo_dir, weights_path=None):
+    # 优先加载 ModelScope 的 HuggingFace 格式快照，始终保持离线。
+    repo_dir = Path(repo_dir)
+    if (repo_dir / "config.json").exists() and (repo_dir / "model.safetensors").exists():
+        from transformers import AutoModel
+
+        return AutoModel.from_pretrained(str(repo_dir), local_files_only=True)
+
+    # 兼容原仓库约定的官方 DINOv2 代码和 .pth 权重。
     network = torch.hub.load(
         str(repo_dir),
         "dinov2_vits14",
@@ -44,8 +51,8 @@ def read_jsonl(path):
 
 def load_rgb(path, image_size):
     image = Image.open(path).convert("RGB")
-    image = image.resize((image_size, image_size), Image.Resampling.BICUBIC)
-    image = torch.from_numpy(np.asarray(image)).permute(2, 0, 1).float() / 255
+    image = image.resize((image_size, image_size), getattr(Image, "Resampling", Image).BICUBIC)
+    image = torch.from_numpy(np.asarray(image).copy()).permute(2, 0, 1).float() / 255
     # 使用 DINOv2 的 ImageNet 归一化参数。
     mean = torch.tensor([0.485, 0.456, 0.406])[:, None, None]
     std = torch.tensor([0.229, 0.224, 0.225])[:, None, None]
@@ -55,5 +62,5 @@ def load_rgb(path, image_size):
 def load_mask(path, image_size):
     # 掩码使用最近邻缩放，避免产生灰色边界。
     mask = Image.open(path).convert("L")
-    mask = mask.resize((image_size, image_size), Image.Resampling.NEAREST)
-    return torch.from_numpy(np.asarray(mask)).float().div(255).unsqueeze(0)
+    mask = mask.resize((image_size, image_size), getattr(Image, "Resampling", Image).NEAREST)
+    return torch.from_numpy(np.asarray(mask).copy()).float().div(255).unsqueeze(0)

@@ -64,10 +64,16 @@ def fit(model, train_loader, val_loader, optimizer, device, epochs, save_dir, lo
             "val_loss": val_loss,
         }
         history.append(record)
+        print(
+            f"epoch={epoch + 1}/{epochs} train_loss={train_loss:.6f} "
+            f"val_loss={val_loss:.6f}",
+            flush=True,
+        )
         if val_loss < best_loss:
             best_loss = val_loss
             torch.save(model.state_dict(), save_dir / "best.pt")
 
+    print(f"best_val_loss={best_loss:.6f}", flush=True)
     (log_dir / "history.json").write_text(
         json.dumps(history, ensure_ascii=False, indent=2)
     )
