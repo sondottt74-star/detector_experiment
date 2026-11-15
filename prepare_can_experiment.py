@@ -76,8 +76,11 @@ def main():
         for row in train_rows + val_rows:
             row = dict(row)
             row_refs = [ref for ref in refs if ref["query"] != row["query"]]
-            if len(row_refs) < 2:
-                row_refs = refs
+            if not row_refs:
+                row_refs = list(refs)
+            while len(row_refs) < 4:
+                row_refs.append(refs[len(row_refs) % len(refs)])
+            row_refs = row_refs[:4]
             row["references"] = [ref["query"] for ref in row_refs]
             row["reference_masks"] = [ref["query_mask"] for ref in row_refs]
             (train if row["can_id"] in train_groups else val).append(row)
