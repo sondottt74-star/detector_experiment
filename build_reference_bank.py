@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -55,9 +56,33 @@ def build_one(args: argparse.Namespace, repo_root: Path, brand: str, video: Path
             "--gpu", str(args.gpu),
             "--ffmpeg", args.ffmpeg,
             "--colmap", args.colmap,
+            "--port", str(args.port),
         ]
+        if args.colmap_no_gpu:
+            command.append("--colmap-no-gpu")
         print("[reference-bank]", " ".join(command), flush=True)
-        subprocess.run(command, cwd=repo_root, check=True)
+        environment = os.environ.copy()
+        environment["QT_QPA_PLATFORM"] = "offscreen"
+        environment["PYTHONPATH"] = ":".join(
+            [str(args.gaussian_repo), str(args.sam2_repo)]
+            + ([environment["PYTHONPATH"]] if environment.get("PYTHONPATH") else [])
+        )
+        colmap_path = Path(args.colmap).resolve()
+        colmap_root = colmap_path.parent.parent
+        plugin_path = colmap_root / "usr" / "lib" / "x86_64-linux-gnu" / "qt5" / "plugins"
+        if plugin_path.exists():
+            environment["QT_PLUGIN_PATH"] = str(plugin_path)
+            environment["QT_QPA_PLATFORM_PLUGIN_PATH"] = str(plugin_path / "platforms")
+        library_dirs = [colmap_root / "lib", colmap_root / "usr" / "lib",
+                        colmap_root / "usr" / "lib" / "x86_64-linux-gnu",
+                        colmap_root / "usr" / "lib" / "x86_64-linux-gnu" / "lapack",
+                        colmap_root / "usr" / "lib" / "x86_64-linux-gnu" / "atlas",
+                        colmap_root / "usr" / "lib" / "x86_64-linux-gnu" / "blas"]
+        existing = environment.get("LD_LIBRARY_PATH", "").split(":")
+        environment["LD_LIBRARY_PATH"] = ":".join(
+            [str(path) for path in library_dirs if path.exists()] + [item for item in existing if item]
+        )
+        subprocess.run(command, cwd=repo_root, env=environment, check=True)
         records = json.loads(references_json.read_text(encoding="utf-8"))
 
     return {
@@ -84,6 +109,8 @@ def main() -> None:
     parser.add_argument("--gpu", type=int, default=0)
     parser.add_argument("--ffmpeg", default="ffmpeg")
     parser.add_argument("--colmap", default="colmap")
+    parser.add_argument("--colmap-no-gpu", action="store_true")
+    parser.add_argument("--port", type=int, default=6009)
     parser.add_argument("--reuse", action="store_true")
     args = parser.parse_args()
 

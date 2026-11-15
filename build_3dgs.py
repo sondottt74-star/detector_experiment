@@ -7,6 +7,39 @@ import subprocess
 import sys
 
 
+
+def extract_video_frames(video, frames_dir, fps, ffmpeg):
+    """Extract frames with local ffmpeg, falling back to OpenCV."""
+    frames_dir = Path(frames_dir)
+    frames_dir.mkdir(parents=True, exist_ok=True)
+    ffmpeg_path = shutil.which(str(ffmpeg)) or (str(ffmpeg) if Path(ffmpeg).exists() else None)
+    if ffmpeg_path:
+        subprocess.run([ffmpeg_path, "-hide_banner", "-loglevel", "warning", "-i",
+                        str(video), "-vf", f"fps={fps}", "-q:v", "2",
+                        str(frames_dir / "frame_%05d.jpg")], check=True)
+        return
+    import cv2
+    capture = cv2.VideoCapture(str(video))
+    if not capture.isOpened():
+        raise RuntimeError(f"cannot open video: {video}")
+    source_fps = capture.get(cv2.CAP_PROP_FPS) or fps
+    stride = max(1, round(source_fps / fps))
+    frame_index = 0
+    output_index = 1
+    while True:
+        ok, frame = capture.read()
+        if not ok:
+            break
+        if frame_index % stride == 0:
+            target = frames_dir / f"frame_{output_index:05d}.jpg"
+            if not cv2.imwrite(str(target), frame):
+                raise RuntimeError(f"cannot write frame: {target}")
+            output_index += 1
+        frame_index += 1
+    capture.release()
+    if output_index == 1:
+        raise RuntimeError(f"no frames extracted from video: {video}")
+
 def build_3dgs(video, gaussian_repo, work_dir, model_dir, ffmpeg, colmap, gpu, fps, iterations):
     work_dir = Path(work_dir)
     model_dir = Path(model_dir)
@@ -14,22 +47,7 @@ def build_3dgs(video, gaussian_repo, work_dir, model_dir, ffmpeg, colmap, gpu, f
     frames_dir.mkdir(parents=True, exist_ok=True)
 
     # 先从正常视频抽帧，再交给 3DGS 官方脚本完成 COLMAP 和训练。
-    subprocess.run(
-        [
-            ffmpeg,
-            "-hide_banner",
-            "-loglevel",
-            "warning",
-            "-i",
-            str(video),
-            "-vf",
-            f"fps={fps}",
-            "-q:v",
-            "2",
-            str(frames_dir / "frame_%05d.jpg"),
-        ],
-        check=True,
-    )
+    extract_video_frames(video, frames_dir, fps, ffmpeg)
 
     environment = os.environ.copy()
     environment["CUDA_VISIBLE_DEVICES"] = str(gpu)

@@ -11,23 +11,58 @@ import tempfile
 from pathlib import Path
 
 
+
+def extract_video_frames(video, frames_dir, fps, ffmpeg):
+    """Extract frames with local ffmpeg, falling back to OpenCV."""
+    frames_dir = Path(frames_dir)
+    frames_dir.mkdir(parents=True, exist_ok=True)
+    ffmpeg_path = shutil.which(str(ffmpeg)) or (str(ffmpeg) if Path(ffmpeg).exists() else None)
+    if ffmpeg_path:
+        subprocess.run([ffmpeg_path, "-hide_banner", "-loglevel", "warning", "-i",
+                        str(video), "-vf", f"fps={fps}", "-q:v", "2",
+                        str(frames_dir / "frame_%05d.jpg")], check=True)
+        return
+    import cv2
+    capture = cv2.VideoCapture(str(video))
+    if not capture.isOpened():
+        raise RuntimeError(f"cannot open video: {video}")
+    source_fps = capture.get(cv2.CAP_PROP_FPS) or fps
+    stride = max(1, round(source_fps / fps))
+    frame_index = 0
+    output_index = 1
+    while True:
+        ok, frame = capture.read()
+        if not ok:
+            break
+        if frame_index % stride == 0:
+            target = frames_dir / f"frame_{output_index:05d}.jpg"
+            if not cv2.imwrite(str(target), frame):
+                raise RuntimeError(f"cannot write frame: {target}")
+            output_index += 1
+        frame_index += 1
+    capture.release()
+    if output_index == 1:
+        raise RuntimeError(f"no frames extracted from video: {video}")
+
 def run_3dgs(video, gaussian_repo, work_dir, model_dir, sam2_repo, sam_checkpoint,
              sam_config, masks_dir, clean_model_dir, references_dir, reference_count,
-             ffmpeg, colmap, gpu, fps, iterations):
+             ffmpeg, colmap, gpu, fps, iterations, colmap_no_gpu=False, port=6009):
     # 1. 抽帧并用 COLMAP 建立相机，2. 训练正常 3DGS。
     work_dir = Path(work_dir)
     model_dir = Path(model_dir)
     frames_dir = work_dir / "input"
     frames_dir.mkdir(parents=True, exist_ok=True)
-    subprocess.run([ffmpeg, "-hide_banner", "-loglevel", "warning", "-i", str(video),
-                    "-vf", f"fps={fps}", "-q:v", "2", str(frames_dir / "frame_%05d.jpg")], check=True)
+    extract_video_frames(video, frames_dir, fps, ffmpeg)
     environment = os.environ.copy()
     environment["CUDA_VISIBLE_DEVICES"] = str(gpu)
-    subprocess.run([sys.executable, "convert.py", "-s", str(work_dir),
-                    "--colmap_executable", str(colmap)], cwd=gaussian_repo,
-                   env=environment, check=True)
+    convert_command = [sys.executable, "convert.py", "-s", str(work_dir),
+                       "--colmap_executable", str(colmap)]
+    if colmap_no_gpu:
+        convert_command.append("--no_gpu")
+    subprocess.run(convert_command, cwd=gaussian_repo, env=environment, check=True)
     subprocess.run([sys.executable, "train.py", "-s", str(work_dir), "-m", str(model_dir),
-                    "--iterations", str(iterations), "--save_iterations", str(iterations)],
+                    "--iterations", str(iterations), "--save_iterations", str(iterations),
+                    "--ip", "127.0.0.1", "--port", str(port)],
                    cwd=gaussian_repo, env=environment, check=True)
     # 3. SAM2 在重建视频上做前景传播，4. 用多视角掩码裁掉背景高斯。
     segment_model(frames_dir, masks_dir, sam2_repo, sam_checkpoint, sam_config)
@@ -231,8 +266,11 @@ if __name__ == "__main__":
     parser.add_argument("--gpu", type=int, default=0)
     parser.add_argument("--fps", type=float, default=2)
     parser.add_argument("--iterations", type=int, default=30000)
+    parser.add_argument("--colmap-no-gpu", action="store_true")
+    parser.add_argument("--port", type=int, default=6009)
     args = parser.parse_args()
     run_3dgs(args.video, args.gaussian_repo, args.work_dir, args.model_dir,
               args.sam2_repo, args.sam_checkpoint, args.sam_config, args.masks_dir,
               args.clean_model_dir, args.references_dir, args.reference_count,
-              args.ffmpeg, args.colmap, args.gpu, args.fps, args.iterations)
+              args.ffmpeg, args.colmap, args.gpu, args.fps, args.iterations,
+              args.colmap_no_gpu, args.port)
