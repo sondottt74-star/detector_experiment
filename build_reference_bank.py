@@ -67,6 +67,7 @@ def build_one(args: argparse.Namespace, repo_root: Path, brand: str, video: Path
             [str(args.gaussian_repo), str(args.sam2_repo)]
             + ([environment["PYTHONPATH"]] if environment.get("PYTHONPATH") else [])
         )
+        environment["PYTHONPATH"] = f"{args.gaussian_repo}:{args.sam2_repo}"
         colmap_path = Path(args.colmap).resolve()
         colmap_root = colmap_path.parent.parent
         plugin_path = colmap_root / "usr" / "lib" / "x86_64-linux-gnu" / "qt5" / "plugins"
