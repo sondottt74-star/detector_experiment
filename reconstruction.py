@@ -14,6 +14,7 @@ from pathlib import Path
 def run_3dgs(video, gaussian_repo, work_dir, model_dir, sam2_repo, sam_checkpoint,
              sam_config, masks_dir, clean_model_dir, references_dir, reference_count,
              ffmpeg, colmap, gpu, fps, iterations):
+    # 1. 抽帧并用 COLMAP 建立相机，2. 训练正常 3DGS。
     work_dir = Path(work_dir)
     model_dir = Path(model_dir)
     frames_dir = work_dir / "input"
@@ -28,8 +29,10 @@ def run_3dgs(video, gaussian_repo, work_dir, model_dir, sam2_repo, sam_checkpoin
     subprocess.run([sys.executable, "train.py", "-s", str(work_dir), "-m", str(model_dir),
                     "--iterations", str(iterations), "--save_iterations", str(iterations)],
                    cwd=gaussian_repo, env=environment, check=True)
+    # 3. SAM2 在重建视频上做前景传播，4. 用多视角掩码裁掉背景高斯。
     segment_model(frames_dir, masks_dir, sam2_repo, sam_checkpoint, sam_config)
     prune_model(model_dir, masks_dir, clean_model_dir, iterations)
+    # 5. 从清理后的模型插值渲染正常参考图库。
     render_reference(gaussian_repo, clean_model_dir, references_dir, reference_count, iterations)
 
 
@@ -56,6 +59,7 @@ def segment_model(frames_dir, masks_dir, sam2_repo, checkpoint, config):
     sys.path.insert(0, str(sam2_repo))
     from sam2.build_sam import build_sam2_video_predictor
 
+    # 第一帧使用框和正负点提示，之后由 SAM2 视频预测器传播到全部帧。
     frames = sorted(Path(frames_dir).glob("*.jpg"))
     output = Path(masks_dir)
     output.mkdir(parents=True, exist_ok=True)
@@ -97,6 +101,7 @@ def prune_model(model_dir, masks_dir, clean_model_dir, iteration, min_ratio=.55,
     import numpy as np
     from plyfile import PlyData, PlyElement
 
+    # 每个高斯投影到所有相机，只有在足够多的前景掩码中出现才保留。
     source = Path(model_dir)
     destination = Path(clean_model_dir)
     source_ply = source / f"point_cloud/iteration_{iteration}/point_cloud.ply"
@@ -152,6 +157,7 @@ def render_reference(gaussian_repo, model_dir, references_dir, count, iteration)
     from scene.cameras import MiniCam
     from build_reference_gallery import interpolate_cameras, make_camera
 
+    # 清理后的高斯模型沿相机轨迹插值，输出 RGB 参考图和前景掩码。
     model = Path(model_dir)
     output = Path(references_dir)
     output.mkdir(parents=True, exist_ok=True)
