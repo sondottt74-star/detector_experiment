@@ -27,6 +27,17 @@ sam2.1_hiera_b_plus → facebook/sam2.1-hiera-base-plus
 grounding_dino_tiny → IDEA-Research/grounding-dino-tiny
 ```
 
+## 上传整理后的 can_detect 数据集
+
+先运行仓库根目录的 `prepare_data.py`，再使用 ModelScope 的可写 AccessToken 上传：
+
+```bash
+python assets/upload_clean_dataset.py \
+  --folder /path/to/can_detect_clean \
+  --token YOUR_MODELSCOPE_ACCESS_TOKEN \
+  --repo-id Sondottt/can_detect
+```
+
 ## 下载 MVTec AD
 
 ModelScope 的数据集下载接口需要具体的 `namespace/name`。把实际的 MVTec AD ModelScope 仓库 ID 传入：
