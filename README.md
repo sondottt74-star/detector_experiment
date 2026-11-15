@@ -22,6 +22,8 @@ detector_experiment/
 ├── build_3dgs.py
 ├── build_reference_gallery.py
 ├── segment_foreground.py
+├── reconstruction.py
+├── prepare_data.py
 ├── assets/
 ├── references/
 ├── masks/
@@ -93,5 +95,35 @@ python segment_foreground.py \
 
 `build_reference_gallery.py` 输出参考图、参考掩码和 `references.json`；
 `segment_foreground.py` 输出待测图前景掩码和 `foreground.jsonl`。两个脚本都只读取本地仓库和本地权重。
+
+## 完整 3DGS 前置流程
+
+`reconstruction.py` 保留 can_detect 的完整顺序：正常视频抽帧和 COLMAP、3DGS 训练、SAM2 视频前景传播、按多视角掩码裁剪背景高斯、从清理后的模型插值渲染参考图库。
+
+```bash
+python reconstruction.py \
+  --video /path/to/normal.mp4 \
+  --gaussian-repo /path/to/gaussian-splatting \
+  --work-dir /path/to/work/can \
+  --model-dir /path/to/models/can \
+  --sam2-repo /path/to/sam2 \
+  --sam-checkpoint /path/to/sam2.1_hiera_b+.pt \
+  --sam-config /path/to/sam2/configs/sam2.1/sam2.1_hiera_b+.yaml \
+  --masks-dir masks/can \
+  --clean-model-dir /path/to/models/can_clean \
+  --references-dir references/can
+```
+
+## 重构数据集
+
+附件目录是交付包索引，完整文件位于工作区的 `can-dataset-s43/experiment_data_s43_20261020`。整理脚本只复制实验需要的图像、掩码、标注、3DGS 参考图和五折清单，并把 13 个易拉罐名称统一成拼音目录名。
+
+```bash
+python prepare_data.py \
+  --source /path/to/experiment_data_s43_20261020 \
+  --output /path/to/can_detect_clean
+```
+
+输出目录可以直接作为 ModelScope 数据集 `Sondottt/can_detect` 上传；`splits/fold1.jsonl` 到 `fold5.jsonl` 中的路径均相对于数据集根目录。
 
 `assets/` 只保存 ModelScope 下载代码，不保存权重或数据集。下载脚本中的三个模型分别对应 `can_detect` 的 DINOv2 ViT-S/14、SAM2.1 Hiera B+ 和 Grounding DINO Tiny。
