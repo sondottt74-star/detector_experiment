@@ -10,6 +10,18 @@ from PIL import Image
 import torch
 
 
+def _config_name(config, sam2_repo):
+    """Convert a local SAM2 config path to Hydra's package-relative name."""
+    config = Path(config)
+    sam2_repo = Path(sam2_repo)
+    if config.is_absolute():
+        try:
+            config = config.relative_to(sam2_repo / "sam2")
+        except ValueError:
+            pass
+    return config.as_posix()
+
+
 def segment_directory(input_dir, output_dir, sam2_repo, checkpoint, config, box):
     sys.path.insert(0, str(sam2_repo))
     from sam2.build_sam import build_sam2
@@ -19,11 +31,15 @@ def segment_directory(input_dir, output_dir, sam2_repo, checkpoint, config, box)
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     predictor = SAM2ImagePredictor(
-        build_sam2(str(config), str(checkpoint), device="cuda")
+        build_sam2(_config_name(config, sam2_repo), str(checkpoint), device="cuda")
     )
     records = []
 
-    for image_path in sorted(input_dir.glob("*")):
+    image_paths = sorted(
+        path for path in input_dir.iterdir()
+        if path.suffix.lower() in {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
+    )
+    for image_path in image_paths:
         # 用固定比例框和罐体内部正点提示 SAM2。
         image = Image.open(image_path).convert("RGB")
         image_array = np.asarray(image)
