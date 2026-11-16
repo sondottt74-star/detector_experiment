@@ -1,8 +1,8 @@
 """Build a multi-brand 3DGS reference bank from normal videos.
 
-This orchestrates the existing reconstruction.py pipeline. It intentionally keeps
-all generated models, masks, rendered views and the bank index under one output
-root so the detector can consume the bank without copying images.
+This orchestrates the existing reconstruction.py pipeline. Trained models and
+COLMAP work stay under the model root. Rendered reference views and the bank
+index stay under the references root so the detector can read images directly.
 """
 from __future__ import annotations
 
@@ -26,12 +26,12 @@ def find_video(video_root: Path, brand: str) -> Path:
 
 
 def build_one(args: argparse.Namespace, repo_root: Path, brand: str, video: Path) -> dict:
-    brand_root = Path(args.output_root) / "brands" / brand
-    work_dir = brand_root / "work"
-    model_dir = brand_root / "model"
-    masks_dir = brand_root / "masks"
-    clean_model_dir = brand_root / "clean_model"
-    references_dir = brand_root / "references"
+    model_root = Path(args.model_root) / brand
+    work_dir = model_root / "work"
+    model_dir = model_root / "model"
+    masks_dir = model_root / "masks"
+    clean_model_dir = model_root / "clean_model"
+    references_dir = Path(args.references_root) / brand
     references_json = references_dir / "references.json"
 
     if args.reuse and references_json.exists():
@@ -89,6 +89,8 @@ def build_one(args: argparse.Namespace, repo_root: Path, brand: str, video: Path
     return {
         "brand": brand,
         "video": str(video.resolve()),
+        "model_dir": str(model_dir.resolve()),
+        "clean_model_dir": str(clean_model_dir.resolve()),
         "references_dir": str(references_dir.resolve()),
         "references": records,
     }
@@ -96,9 +98,10 @@ def build_one(args: argparse.Namespace, repo_root: Path, brand: str, video: Path
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--repo-root", default=str(Path(__file__).resolve().parents[1]))
+    parser.add_argument("--repo-root", default=str(Path(__file__).resolve().parent))
     parser.add_argument("--video-root", required=True)
-    parser.add_argument("--output-root", required=True)
+    parser.add_argument("--model-root", required=True)
+    parser.add_argument("--references-root", required=True)
     parser.add_argument("--gaussian-repo", required=True)
     parser.add_argument("--sam2-repo", required=True)
     parser.add_argument("--sam-checkpoint", required=True)
@@ -132,17 +135,17 @@ def main() -> None:
         video = find_video(video_root, brand)
         entries[brand] = build_one(args, repo_root, brand, video)
 
-    output = Path(args.output_root).resolve()
-    output.mkdir(parents=True, exist_ok=True)
+    references_root = Path(args.references_root).resolve()
+    references_root.mkdir(parents=True, exist_ok=True)
+    Path(args.model_root).resolve().mkdir(parents=True, exist_ok=True)
     bank = {
         "schema_version": 1,
         "reference_count_per_brand": args.reference_count,
         "brands": entries,
     }
-    (output / "reference_bank.json").write_text(
-        json.dumps(bank, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
-    print(f"[reference-bank] wrote {output / 'reference_bank.json'}", flush=True)
+    bank_path = references_root / "reference_bank.json"
+    bank_path.write_text(json.dumps(bank, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"[reference-bank] wrote {bank_path}", flush=True)
 
 
 if __name__ == "__main__":

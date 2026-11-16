@@ -7,8 +7,9 @@ from .utils import load_mask, load_rgb, read_jsonl
 
 
 class ReferenceDataset(Dataset):
-    def __init__(self, manifest, image_size=448):
+    def __init__(self, manifest, image_size=518):
         self.records = read_jsonl(manifest)
+        # 尺寸在写清单时已经固定，这里保留参数，读取时不再缩放。
         self.image_size = image_size
 
     def __len__(self):
@@ -16,15 +17,11 @@ class ReferenceDataset(Dataset):
 
     def __getitem__(self, index):
         record = self.records[index]
-        # manifest 中的 references 与 reference_masks 按同一顺序配对。
-        query = load_rgb(record["query"], self.image_size)
-        references = torch.stack(
-            [load_rgb(path, self.image_size) for path in record["references"]]
-        )
-        query_mask = load_mask(record["query_mask"], self.image_size)
-        reference_masks = torch.stack(
-            [load_mask(path, self.image_size) for path in record["reference_masks"]]
-        )
-        target_mask = load_mask(record["target_mask"], self.image_size)
+        # 清单里的图和掩码在划分数据集时已经做成 image_size 的正方形。
+        query = load_rgb(record["query"])
+        references = torch.stack([load_rgb(path) for path in record["references"]])
+        query_mask = load_mask(record["query_mask"])
+        reference_masks = torch.stack([load_mask(path) for path in record["reference_masks"]])
+        target_mask = load_mask(record["target_mask"])
         label = torch.tensor(record["label"], dtype=torch.float32)
         return query, references, query_mask, reference_masks, target_mask, label

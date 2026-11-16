@@ -11,7 +11,7 @@ import torch
 
 
 def _config_name(config, sam2_repo):
-    """Convert a local SAM2 config path to Hydra's package-relative name."""
+    """把本地配置路径改成 Hydra 需要的、相对 sam2 包的名字。"""
     config = Path(config)
     sam2_repo = Path(sam2_repo)
     if config.is_absolute():
@@ -23,6 +23,8 @@ def _config_name(config, sam2_repo):
 
 
 def segment_directory(input_dir, output_dir, sam2_repo, checkpoint, config, box):
+    """逐张用框和罐体内部正点提示 SAM2，保存前景掩码。"""
+    # 从本地仓库导入，不依赖已经安装的 sam2。
     sys.path.insert(0, str(sam2_repo))
     from sam2.build_sam import build_sam2
     from sam2.sam2_image_predictor import SAM2ImagePredictor
@@ -40,7 +42,7 @@ def segment_directory(input_dir, output_dir, sam2_repo, checkpoint, config, box)
         if path.suffix.lower() in {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
     )
     for image_path in image_paths:
-        # 用固定比例框和罐体内部正点提示 SAM2。
+        # box 是相对宽高的比例，三个正点沿罐体竖直中线分布，标成前景。
         image = Image.open(image_path).convert("RGB")
         image_array = np.asarray(image)
         height, width = image_array.shape[:2]
@@ -68,6 +70,7 @@ def segment_directory(input_dir, output_dir, sam2_repo, checkpoint, config, box)
                 point_labels=np.ones(3, dtype=np.int32),
                 multimask_output=True,
             )
+        # multimask_output 会给出多张候选，取得分最高的一张。
         mask = masks[scores.argmax()]
         mask_path = output_dir / f"{image_path.stem}_mask.png"
         Image.fromarray(mask.astype(np.uint8) * 255).save(mask_path)

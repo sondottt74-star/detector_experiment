@@ -6,6 +6,7 @@ import shutil
 from pathlib import Path
 
 
+# 中文品牌名改成目录用的拼音，避免路径里出现中文。
 PINYIN = {
     "冰峰": "bingfeng",
     "哈尔滨": "haerbin",
@@ -24,6 +25,7 @@ PINYIN = {
 
 
 def source_row(row):
+    """把原始索引里的中文路径改写成整理后的相对路径。"""
     chinese_name = row["original_can_type"]
     can_name = PINYIN[chinese_name]
     capture_id = Path(row["image"]).parent.name
@@ -43,11 +45,13 @@ def source_row(row):
         "source_frame": row.get("source_frame"),
         "label": row["label"],
         "split": row["split"],
+        # source_frame 以 frame_ 开头的是建库视频抽帧，其余是单独拍摄的待测图。
         "is_3dgs_input": str(row.get("source_frame", "")).startswith("frame_"),
     }
 
 
 def rewrite_annotation(source, target, can_name, capture_id, image_name):
+    """改写 LabelMe 的 imagePath，让标注指向整理后的图像位置。"""
     annotation = json.loads(source.read_text(encoding="utf-8"))
     annotation["imagePath"] = f"../../../images/{can_name}/{capture_id}/{image_name}"
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -64,6 +68,7 @@ def prepare(source, output):
     images_root.mkdir(parents=True, exist_ok=True)
     annotations_root.mkdir(parents=True, exist_ok=True)
 
+    # 记下拼音名、中文名和 3DGS 模型 ID 的对应关系。
     mapping = json.loads((data / "processed/mapping.json").read_text(encoding="utf-8"))
     metadata = {
         PINYIN[chinese_name]: {"name_zh": chinese_name, "model_id": model_id}
@@ -74,6 +79,7 @@ def prepare(source, output):
         json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8"
     )
 
+    # 图像按品牌和拍摄批次原样复制；标注里的 imagePath 改到新目录。
     for chinese_name, can_name in PINYIN.items():
         shutil.copytree(
             data / "processed/images" / chinese_name,
@@ -91,6 +97,7 @@ def prepare(source, output):
                 image_name,
             )
 
+    # fold1 同时作为全部待测图清单；其中抽帧记录单独写成 3DGS 建库输入。
     rows = [
         source_row(json.loads(line))
         for line in (installed / "fold1/dataset_indexed.jsonl")
@@ -109,6 +116,7 @@ def prepare(source, output):
         encoding="utf-8",
     )
 
+    # 五折清单只改路径，划分本身沿用交付包。
     for fold in range(1, 6):
         fold_rows = [
             source_row(json.loads(line))

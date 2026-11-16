@@ -29,7 +29,7 @@ grounding_dino_tiny → IDEA-Research/grounding-dino-tiny
 
 ## 上传整理后的 can_detect 数据集
 
-先运行仓库根目录的 `prepare_data.py`，再使用 ModelScope 的可写 AccessToken 上传：
+先运行 `preprocessing/prepare_data.py`，再使用 ModelScope 的可写 AccessToken 上传：
 
 ```bash
 python assets/upload_raw_dataset.py \

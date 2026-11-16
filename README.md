@@ -19,11 +19,17 @@ detector_experiment/
 ├── trainer.py
 ├── utils.py
 ├── main.py
-├── build_3dgs.py
-├── build_reference_gallery.py
-├── segment_foreground.py
-├── reconstruction.py
-├── prepare_data.py
+├── build_ref/
+│   ├── build_3dgs.py
+│   ├── build_reference_gallery.py
+│   ├── build_reference_bank.py
+│   ├── reconstruction.py
+│   └── run_full_reference_bank.sh
+├── preprocessing/
+│   ├── prepare_data.py
+│   ├── prepare_can_experiment.py
+│   ├── segment_foreground.py
+│   └── build_detection_manifest.py
 ├── assets/
 ├── references/
 ├── masks/
@@ -65,7 +71,7 @@ python main.py \
 从正常视频训练本地 3DGS：
 
 ```bash
-python build_3dgs.py \
+python build_ref/build_3dgs.py \
   --video /path/to/normal.mp4 \
   --gaussian-repo /path/to/gaussian-splatting \
   --work-dir /path/to/work/can \
@@ -75,7 +81,7 @@ python build_3dgs.py \
 从 3DGS 模型渲染正常参考图库：
 
 ```bash
-python build_reference_gallery.py \
+python build_ref/build_reference_gallery.py \
   --gaussian-repo /path/to/gaussian-splatting \
   --model-dir /path/to/models/can \
   --output-dir references/can \
@@ -85,7 +91,7 @@ python build_reference_gallery.py \
 对待测图提取 SAM2 前景：
 
 ```bash
-python segment_foreground.py \
+python preprocessing/segment_foreground.py \
   --input-dir /path/to/query_images \
   --output-dir masks/query \
   --sam2-repo /path/to/sam2 \
@@ -93,15 +99,15 @@ python segment_foreground.py \
   --config /path/to/sam2/configs/sam2.1/sam2.1_hiera_b+.yaml
 ```
 
-`build_reference_gallery.py` 输出参考图、参考掩码和 `references.json`；
-`segment_foreground.py` 输出待测图前景掩码和 `foreground.jsonl`。两个脚本都只读取本地仓库和本地权重。
+`build_ref/build_reference_gallery.py` 输出参考图、参考掩码和 `references.json`；
+`preprocessing/segment_foreground.py` 输出待测图前景掩码和 `foreground.jsonl`。两个脚本都只读取本地仓库和本地权重。
 
 ## 完整 3DGS 前置流程
 
-`reconstruction.py` 保留 can_detect 的完整顺序：正常视频抽帧和 COLMAP、3DGS 训练、SAM2 视频前景传播、按多视角掩码裁剪背景高斯、从清理后的模型插值渲染参考图库。
+`build_ref/reconstruction.py` 保留 can_detect 的完整顺序：正常视频抽帧和 COLMAP、3DGS 训练、SAM2 视频前景传播、按多视角掩码裁剪背景高斯、从清理后的模型插值渲染参考图库。多品牌建库用 `build_ref/run_full_reference_bank.sh`，它调用同目录的 `build_reference_bank.py`。
 
 ```bash
-python reconstruction.py \
+python build_ref/reconstruction.py \
   --video /path/to/normal.mp4 \
   --gaussian-repo /path/to/gaussian-splatting \
   --work-dir /path/to/work/can \
@@ -119,7 +125,7 @@ python reconstruction.py \
 附件目录是交付包索引，完整文件位于工作区的 `can-dataset-s43/experiment_data_s43_20261020`。整理脚本只复制原始图像、原始 LabelMe 标注和建库/待测输入清单，并把 13 个易拉罐名称统一成拼音目录名；不会复制现成参考库或任何已生成掩码。
 
 ```bash
-python prepare_data.py \
+python preprocessing/prepare_data.py \
   --source /path/to/experiment_data_s43_20261020 \
   --output /path/to/can_detect_raw
 ```

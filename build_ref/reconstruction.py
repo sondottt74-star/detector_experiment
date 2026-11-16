@@ -204,7 +204,7 @@ def render_reference(gaussian_repo, model_dir, references_dir, count, iteration)
     from gaussian_renderer import render
     from scene import GaussianModel
     from scene.cameras import MiniCam
-    from .build_reference_gallery import interpolate_cameras, make_camera
+    from build_reference_gallery import interpolate_cameras, make_camera
 
     # 清理后的高斯模型沿相机轨迹插值，输出 RGB 参考图和前景掩码。
     model = Path(model_dir)
