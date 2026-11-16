@@ -122,17 +122,20 @@ def main():
     retrieval_cache = output / "retrieval_cache"
     retrieval_cache.mkdir(parents=True, exist_ok=True)
     for brand, rows in sorted(rows_by_brand.items()):
-        # 品牌名对不上时，只接受唯一的互相包含别名，避免配错参考库。
+        # tag 是这批待测图对应的参考库名字。检索只在这个库里进行。
         if brand not in bank:
             aliases = [name for name in bank if brand in name or name in brand]
             if len(aliases) != 1:
                 raise KeyError(f"reference bank has no unambiguous entry for {brand}")
-            bank_entry = bank[aliases[0]]
+            tag = aliases[0]
         else:
-            bank_entry = bank[brand]
+            tag = brand
+        bank_entry = bank[tag]
+        for row in rows:
+            row["tag"] = tag
         # 高斯渲染图用建库时的轮廓掩码做同一套正方形，不再跑 SAM2。
         gallery = []
-        reference_dir = prepared / "references" / brand
+        reference_dir = prepared / "references" / tag
         for item in bank_entry["references"]:
             source = Path(item["image"])
             fitted_image = reference_dir / source.name
@@ -144,7 +147,7 @@ def main():
             })
         gallery_paths = [item["image"] for item in gallery]
         # 参考库向量按品牌和输入尺寸缓存。待测图用已经对齐的 518 图编码。
-        cache_path = retrieval_cache / f"{brand}_{args.image_size}.pt"
+        cache_path = retrieval_cache / f"{tag}_{args.image_size}.pt"
         if cache_path.exists():
             gallery_vectors = torch.load(cache_path, map_location="cpu", weights_only=True)
         else:
@@ -158,7 +161,7 @@ def main():
         # 两边都已 L2 归一化，点积就是余弦相似度。
         similarity = query_vectors @ gallery_vectors.T
         for row, scores in zip(rows, similarity):
-            # 每张待测图保留相似度最高的若干张正常参考图及其前景掩码。
+            # 只从 tag 对应的参考库里保留相似度最高的若干张正常参考图。
             count = min(args.reference_count, len(gallery))
             indices = scores.topk(count).indices.tolist()
             row["references"] = [gallery[index]["image"] for index in indices]
