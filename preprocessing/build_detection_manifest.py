@@ -80,7 +80,7 @@ def main():
     data_root = Path(args.data_root).resolve()
     output = Path(args.output).resolve()
     target_root = output / "masks"
-    test_root = data_root / "新测试数据"
+    test_root = data_root / "00_raw" / "query_inputs"
     bank = load_bank(args.reference_bank)
     device = torch.device(args.device)
     encoder = load_local_dinov2(args.dino_repo, args.dino_weights).to(device)

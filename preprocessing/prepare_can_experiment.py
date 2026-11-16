@@ -31,7 +31,7 @@ def main():
     args = parser.parse_args()
     data_root = Path(args.data_root)
     output = Path(args.output)
-    test_root = data_root / "新测试数据"
+    test_root = data_root / "00_raw" / "query_inputs"
     mask_root = output / "masks"
     rows = []
     for brand_dir in sorted(p for p in test_root.iterdir() if p.is_dir()):

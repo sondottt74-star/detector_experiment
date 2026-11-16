@@ -13,7 +13,7 @@ export QT_PLUGIN_PATH="$COL/usr/lib/x86_64-linux-gnu/qt5/plugins"
 export QT_QPA_PLATFORM_PLUGIN_PATH="$COL/usr/lib/x86_64-linux-gnu/qt5/plugins/platforms"
 mkdir -p "$OUT/logs"
 cd "$REPO"
-common=(--video-root "$BASE/data/04_输入数据/原始输入数据" --output-root "$OUT" --gaussian-repo "$REPO/third_party/gaussian-splatting" --sam2-repo "$REPO/third_party/sam2" --sam-checkpoint "$BASE/models/sam2.1_hiera_b_plus/sam2.1_hiera_base_plus.pt" --sam-config "$REPO/third_party/sam2/sam2/configs/sam2.1/sam2.1_hiera_b+.yaml" --reference-count 720 --fps 1 --iterations 30000 --colmap "$COL/usr/bin/colmap" --colmap-no-gpu)
+common=(--video-root "$BASE/data/04_输入数据/00_raw/reference_inputs" --output-root "$OUT" --gaussian-repo "$REPO/third_party/gaussian-splatting" --sam2-repo "$REPO/third_party/sam2" --sam-checkpoint "$BASE/models/sam2.1_hiera_b_plus/sam2.1_hiera_base_plus.pt" --sam-config "$REPO/third_party/sam2/sam2/configs/sam2.1/sam2.1_hiera_b+.yaml" --reference-count 720 --fps 1 --iterations 30000 --colmap "$COL/usr/bin/colmap" --colmap-no-gpu)
 run_one() {
   local brand="$1" gpu="$2" port="$3" logfile="$4"
   CUDA_VISIBLE_DEVICES="$gpu" PYTHONUNBUFFERED=1 python3 build_reference_bank.py "${common[@]}" --brands "$brand" --gpu "$gpu" --port "$port" > "$OUT/logs/$logfile" 2>&1
