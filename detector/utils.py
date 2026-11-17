@@ -131,13 +131,17 @@ def fit_foreground(image, mask, size=518, margin=14):
     return Image.fromarray(canvas), Image.fromarray(canvas_mask), (x0, y0, scale, left, top)
 
 
-def load_rgb(path):
-    # 图在划分数据集时已经是正方形，这里只做 ImageNet 归一化。
-    image = Image.open(path).convert("RGB")
-    image = torch.from_numpy(np.asarray(image).copy()).permute(2, 0, 1).float() / 255
+def rgb_tensor(image):
+    """把一张 RGB 图做 ImageNet 归一化。"""
+    array = torch.from_numpy(np.asarray(image.convert("RGB")).copy()).permute(2, 0, 1).float() / 255
     mean = torch.tensor(IMAGENET_MEAN)[:, None, None]
     std = torch.tensor(IMAGENET_STD)[:, None, None]
-    return (image - mean) / std
+    return (array - mean) / std
+
+
+def load_rgb(path):
+    # 图在划分数据集时已经是正方形，这里只做 ImageNet 归一化。
+    return rgb_tensor(Image.open(path))
 
 
 def load_mask(path):

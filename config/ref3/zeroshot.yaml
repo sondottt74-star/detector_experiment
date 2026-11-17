@@ -1,0 +1,19 @@
+# 三张参考图加光度增强，零样本。训练不含哈尔滨清爽、嘉士伯、科罗娜啤酒，测试只含这三款。训练时按 FoundAD 改外观。
+seed: 42
+image_size: 518
+batch_size: 16
+learning_rate: 0.0001
+epochs: 20
+device: cuda:0
+dino_repo: ../models/dinov2_vits14
+dino_weights: null
+augment: true
+reference_count: 3
+train_manifest: cleaned_data/zeroshot/train.jsonl
+val_manifest: cleaned_data/zeroshot/val.jsonl
+save_dir: save/ref3/zeroshot
+log_dir: log/ref3/zeroshot
+output_dir: output/ref3/zeroshot/val
+infer_manifest: cleaned_data/zeroshot/test.jsonl
+checkpoint: save/ref3/zeroshot/best.pt
+infer_output: output/ref3/zeroshot/test

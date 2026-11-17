@@ -1,0 +1,18 @@
+# 光度增强实验，五折监督第 3 折。训练时按 FoundAD 改外观，清单与 baseline 相同。
+seed: 42
+image_size: 518
+batch_size: 16
+learning_rate: 0.0001
+epochs: 20
+device: cuda:0
+dino_repo: ../models/dinov2_vits14
+dino_weights: null
+augment: true
+train_manifest: cleaned_data/fold3/train.jsonl
+val_manifest: cleaned_data/fold3/val.jsonl
+save_dir: save/photometric/supervised/fold3
+log_dir: log/photometric/supervised/fold3
+output_dir: output/photometric/supervised/fold3/val
+infer_manifest: cleaned_data/fold3/test.jsonl
+checkpoint: save/photometric/supervised/fold3/best.pt
+infer_output: output/photometric/supervised/fold3/test

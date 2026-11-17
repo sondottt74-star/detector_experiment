@@ -88,7 +88,9 @@ def main():
     output_dir = resolve(raw.get("infer_output")) or config.output_dir
 
     records = read_jsonl(manifest)
-    dataset = ReferenceDataset(manifest, config.image_size)
+    dataset = ReferenceDataset(
+        manifest, config.image_size, reference_count=config.reference_count
+    )
     loader = DataLoader(dataset, batch_size=config.batch_size, shuffle=False)
 
     encoder = load_local_dinov2(config.dino_repo, config.dino_weights)

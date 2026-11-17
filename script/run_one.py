@@ -1,7 +1,7 @@
 """按一份 yaml 训练，并在测试清单上推理、计分。
 
-训练步骤与 main.py 相同。main.py 固定读取 config/train.yaml，
-这里改为接收配置路径，方便五折和 zeroshot 各写各的目录。
+训练步骤与 main.py 相同。这里在训练后继续推理和计分，
+方便五折和 zeroshot 各写各的目录。
 """
 
 import json
@@ -59,8 +59,12 @@ def predictions_done(manifest, output_dir):
 
 def train(config):
     torch.manual_seed(config.seed)
-    train_set = ReferenceDataset(config.train_manifest, config.image_size)
-    val_set = ReferenceDataset(config.val_manifest, config.image_size)
+    train_set = ReferenceDataset(
+        config.train_manifest, config.image_size, config.augment, config.reference_count
+    )
+    val_set = ReferenceDataset(
+        config.val_manifest, config.image_size, reference_count=config.reference_count
+    )
     train_loader = DataLoader(train_set, batch_size=config.batch_size, shuffle=True)
     val_loader = DataLoader(val_set, batch_size=config.batch_size, shuffle=False)
 

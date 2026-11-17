@@ -1,0 +1,19 @@
+# 三张参考图加光度增强，五折监督第 3 折。清单与 baseline 相同，训练时按 FoundAD 改外观。
+seed: 42
+image_size: 518
+batch_size: 16
+learning_rate: 0.0001
+epochs: 20
+device: cuda:0
+dino_repo: ../models/dinov2_vits14
+dino_weights: null
+augment: true
+reference_count: 3
+train_manifest: cleaned_data/fold3/train.jsonl
+val_manifest: cleaned_data/fold3/val.jsonl
+save_dir: save/ref3/supervised/fold3
+log_dir: log/ref3/supervised/fold3
+output_dir: output/ref3/supervised/fold3/val
+infer_manifest: cleaned_data/fold3/test.jsonl
+checkpoint: save/ref3/supervised/fold3/best.pt
+infer_output: output/ref3/supervised/fold3/test

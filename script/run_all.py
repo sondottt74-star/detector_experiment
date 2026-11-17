@@ -16,12 +16,12 @@ from config.train_config import resolve
 
 
 CONFIGS = [
-    "config/supervised/fold1.yaml",
-    "config/supervised/fold2.yaml",
-    "config/supervised/fold3.yaml",
-    "config/supervised/fold4.yaml",
-    "config/supervised/fold5.yaml",
-    "config/zeroshot/zeroshot.yaml",
+    "config/photometric/fold1.yaml",
+    "config/photometric/fold2.yaml",
+    "config/photometric/fold3.yaml",
+    "config/photometric/fold4.yaml",
+    "config/photometric/fold5.yaml",
+    "config/photometric/zeroshot.yaml",
 ]
 PREFERRED_GPUS = ["1", "3"]
 
@@ -64,7 +64,7 @@ def summarize(finished):
         rows.append(item)
     supervised = [
         row for row in rows
-        if "/supervised/" in row["config"] and "metrics" in row
+        if "zeroshot" not in row["config"] and "metrics" in row
     ]
     summary = {"runs": rows}
     if supervised:

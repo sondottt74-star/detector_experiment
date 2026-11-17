@@ -33,6 +33,8 @@ class TrainConfig:
     save_dir: Path
     log_dir: Path
     output_dir: Path
+    augment: bool
+    reference_count: int
 
     @classmethod
     def load(cls, path):
@@ -51,4 +53,6 @@ class TrainConfig:
             save_dir=resolve(raw["save_dir"]),
             log_dir=resolve(raw["log_dir"]),
             output_dir=resolve(raw["output_dir"]),
+            augment=bool(raw.get("augment", False)),
+            reference_count=int(raw.get("reference_count", 4)),
         )
