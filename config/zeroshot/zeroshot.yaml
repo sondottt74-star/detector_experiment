@@ -9,9 +9,9 @@ dino_repo: ../models/dinov2_vits14
 dino_weights: null
 train_manifest: cleaned_data/zeroshot/train.jsonl
 val_manifest: cleaned_data/zeroshot/val.jsonl
-save_dir: save/zeroshot
-log_dir: log/zeroshot
-output_dir: output/zeroshot/val
+save_dir: save/baseline/zeroshot
+log_dir: log/baseline/zeroshot
+output_dir: output/baseline/zeroshot/val
 infer_manifest: cleaned_data/zeroshot/test.jsonl
-checkpoint: save/zeroshot/best.pt
-infer_output: output/zeroshot/test
+checkpoint: save/baseline/zeroshot/best.pt
+infer_output: output/baseline/zeroshot/test

@@ -9,9 +9,9 @@ dino_repo: ../models/dinov2_vits14
 dino_weights: null
 train_manifest: cleaned_data/fold4/train.jsonl
 val_manifest: cleaned_data/fold4/val.jsonl
-save_dir: save/supervised/fold4
-log_dir: log/supervised/fold4
-output_dir: output/supervised/fold4/val
+save_dir: save/baseline/supervised/fold4
+log_dir: log/baseline/supervised/fold4
+output_dir: output/baseline/supervised/fold4/val
 infer_manifest: cleaned_data/fold4/test.jsonl
-checkpoint: save/supervised/fold4/best.pt
-infer_output: output/supervised/fold4/test
+checkpoint: save/baseline/supervised/fold4/best.pt
+infer_output: output/baseline/supervised/fold4/test
