@@ -1,0 +1,17 @@
+# 五折监督第 1 折。device 写 cuda:0，物理卡由 CUDA_VISIBLE_DEVICES 选择。
+seed: 42
+image_size: 518
+batch_size: 16
+learning_rate: 0.0001
+epochs: 20
+device: cuda:0
+dino_repo: ../models/dinov2_vits14
+dino_weights: null
+train_manifest: cleaned_data/fold1/train.jsonl
+val_manifest: cleaned_data/fold1/val.jsonl
+save_dir: save/supervised/fold1
+log_dir: log/supervised/fold1
+output_dir: output/supervised/fold1/val
+infer_manifest: cleaned_data/fold1/test.jsonl
+checkpoint: save/supervised/fold1/best.pt
+infer_output: output/supervised/fold1/test

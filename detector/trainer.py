@@ -11,14 +11,19 @@ from .utils import save_heatmap_image
 
 
 def loss_fn(pixel_logits, image_logits, target_mask, query_mask, labels):
-    # 像素 BCE、区域 Dice 和整图分类共同训练检测器。
+    # 像素项用 focal 权重：预测对的像素权重接近 0，缺陷像素再乘 4。
     # 前景掩码把背景排除在像素损失之外。
-    pixel_loss = F.binary_cross_entropy_with_logits(
+    bce = F.binary_cross_entropy_with_logits(
         pixel_logits, target_mask, reduction="none"
     )
-    pixel_loss = (pixel_loss * query_mask).sum() / query_mask.sum()
+    probability = pixel_logits.sigmoid()
+    correct = target_mask * probability + (1 - target_mask) * (1 - probability)
+    pixel_loss = (
+        ((1 - correct).pow(2) * bce * (1 + 3 * target_mask) * query_mask).sum()
+        / query_mask.sum().clamp_min(1)
+    )
     # Dice 用预测区域和缺陷区域的重叠约束形状，分子分母都加 1 避免除零。
-    probability = pixel_logits.sigmoid() * query_mask
+    probability = probability * query_mask
     truth = target_mask * query_mask
     dice_loss = 1 - (
         2 * (probability * truth).sum((1, 2, 3)) + 1
@@ -96,7 +101,7 @@ def save_predictions(model, loader, device, output_dir):
     with torch.no_grad():
         for index, batch in enumerate(loader):
             # query 仍保留在 device 上，后面逐张还原成热力图。
-            query, references, query_mask, reference_masks, _, _ = [
+            query, references, query_mask, reference_masks, target_mask, _ = [
                 item.to(device) for item in batch
             ]
             pixel_logits, image_logits = model(
@@ -108,11 +113,14 @@ def save_predictions(model, loader, device, output_dir):
             # npy 按 batch 保存，供数值评估；PNG 按单张图保存，供直接查看。
             np.save(output_dir / f"{index:04d}_heatmap.npy", heatmap.cpu().numpy())
             np.save(output_dir / f"{index:04d}_score.npy", score.cpu().numpy())
-            for query_image, sample_heatmap, sample_score in zip(query, heatmap, score):
+            for query_image, sample_heatmap, sample_score, sample_target in zip(
+                query, heatmap, score, target_mask
+            ):
                 save_heatmap_image(
                     query_image,
                     sample_heatmap,
                     float(sample_score),
                     output_dir / f"{sample_index:04d}_heatmap.png",
+                    sample_target,
                 )
                 sample_index += 1

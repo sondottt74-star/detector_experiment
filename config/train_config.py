@@ -1,4 +1,4 @@
-"""从 train.yaml 读取训练参数。"""
+"""训练配置。相对路径相对 detector_experiment 目录。"""
 
 from dataclasses import dataclass
 from pathlib import Path
@@ -6,52 +6,49 @@ from pathlib import Path
 import yaml
 
 
-# main.py 所在目录。yaml 里的相对路径相对这里解析。
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def _resolve(path):
-    # 空权重表示使用仓库里的 safetensors。绝对路径保持不变。
+def resolve(path):
     if path is None:
         return None
     path = Path(path)
-    if path.is_absolute():
-        return path
-    return ROOT / path
+    if not path.is_absolute():
+        path = ROOT / path
+    return path.resolve()
 
 
 @dataclass
 class TrainConfig:
+    seed: int
     train_manifest: Path
     val_manifest: Path
-    dino_repo: Path
-    dino_weights: Path | None
     image_size: int
     batch_size: int
-    epochs: int
-    learning_rate: float
+    dino_repo: Path
+    dino_weights: Path | None
     device: str
-    seed: int
+    learning_rate: float
+    epochs: int
     save_dir: Path
     log_dir: Path
     output_dir: Path
 
     @classmethod
     def load(cls, path):
-        with Path(path).open(encoding="utf-8") as config_file:
-            raw = yaml.safe_load(config_file)
+        raw = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
         return cls(
-            train_manifest=_resolve(raw["train_manifest"]),
-            val_manifest=_resolve(raw["val_manifest"]),
-            dino_repo=_resolve(raw["dino_repo"]),
-            dino_weights=_resolve(raw["dino_weights"]),
-            image_size=raw["image_size"],
-            batch_size=raw["batch_size"],
-            epochs=raw["epochs"],
-            learning_rate=raw["learning_rate"],
-            device=raw["device"],
-            seed=raw["seed"],
-            save_dir=_resolve(raw["save_dir"]),
-            log_dir=_resolve(raw["log_dir"]),
-            output_dir=_resolve(raw["output_dir"]),
+            seed=int(raw["seed"]),
+            train_manifest=resolve(raw["train_manifest"]),
+            val_manifest=resolve(raw["val_manifest"]),
+            image_size=int(raw["image_size"]),
+            batch_size=int(raw["batch_size"]),
+            dino_repo=resolve(raw["dino_repo"]),
+            dino_weights=resolve(raw.get("dino_weights")),
+            device=str(raw["device"]),
+            learning_rate=float(raw["learning_rate"]),
+            epochs=int(raw["epochs"]),
+            save_dir=resolve(raw["save_dir"]),
+            log_dir=resolve(raw["log_dir"]),
+            output_dir=resolve(raw["output_dir"]),
         )

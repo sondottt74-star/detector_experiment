@@ -164,36 +164,53 @@ def denormalize(image):
     return np.clip(array * std + mean, 0.0, 1.0)
 
 
-def render_heatmap(image, score, anomaly_score):
-    """从左到右拼出原图、叠加图和纯热力图，并标上整图异常分数。"""
-    score = score.detach().float().cpu().numpy()
-    # 模型输出带通道维 (1, H, W)，着色只使用空间维。
-    if score.ndim == 3:
-        score = score[0]
+def _spatial(value):
+    """去掉通道维，得到一张 H×W 图。张量和数组都能进来。"""
+    if torch.is_tensor(value):
+        value = value.detach().float().cpu().numpy()
+    else:
+        value = np.asarray(value)
+    if value.ndim == 3:
+        value = value[0]
+    return value
+
+
+def _panel(image):
+    return (np.clip(image, 0.0, 1.0) * 255).astype(np.uint8)
+
+
+def render_heatmap(image, score, anomaly_score, target=None):
+    """从左到右拼出原图、预测叠加、热力图和缺陷标注。"""
+    score = _spatial(score)
     original = denormalize(image)
     color = colorize(score)
     # 概率同时作为透明度：背景和低分区域保留原图，高分区域显示红色。
     weight = np.clip(score, 0.0, 1.0)[..., None]
     overlay = original * (1.0 - 0.65 * weight) + color * (0.65 * weight)
-    panels = np.concatenate(
-        [
-            (original * 255).astype(np.uint8),
-            (np.clip(overlay, 0.0, 1.0) * 255).astype(np.uint8),
-            (color * 255).astype(np.uint8),
-        ],
-        axis=1,
-    )
-    canvas = Image.fromarray(panels)
-    text = f"score {float(anomaly_score):.3f}"
+    panels = [original, overlay, color]
+    if target is not None:
+        # 缺陷标注用绿色盖在原图上，和红色预测分开。正常图没有缺陷，这一张保持原图。
+        truth = _spatial(target) > 0.5
+        green = np.zeros_like(original)
+        green[..., 1] = 1.0
+        cover = truth.astype(np.float32)[..., None]
+        panels.append(original * (1.0 - 0.65 * cover) + green * (0.65 * cover))
+    canvas = Image.fromarray(np.concatenate([_panel(panel) for panel in panels], axis=1))
     draw = ImageDraw.Draw(canvas)
+    text = f"score {float(anomaly_score):.3f}"
     text_box = draw.textbbox((4, 2), text)
     draw.rectangle((0, 0, text_box[2] + 4, text_box[3] + 2), fill=(0, 0, 0))
     draw.text((4, 2), text, fill=(255, 255, 255))
+    if target is not None:
+        left = original.shape[1] * 3 + 4
+        gt_box = draw.textbbox((left, 2), "gt")
+        draw.rectangle((left - 4, 0, gt_box[2] + 4, gt_box[3] + 2), fill=(0, 0, 0))
+        draw.text((left, 2), "gt", fill=(255, 255, 255))
     return canvas
 
 
-def save_heatmap_image(image, score, anomaly_score, path):
-    """把一张待测图的热力图写成 PNG。"""
+def save_heatmap_image(image, score, anomaly_score, path, target=None):
+    """把一张待测图的热力图写成 PNG。target 是同一分辨率的缺陷掩码。"""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    render_heatmap(image, score, anomaly_score).save(path)
+    render_heatmap(image, score, anomaly_score, target).save(path)

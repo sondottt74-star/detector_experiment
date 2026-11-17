@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from config.train_config import TrainConfig
 from detector.dataset import ReferenceDataset
 from detector.model import Detector
-from detector.trainer import fit, save_predictions
+from detector.trainer import fit
 from detector.utils import load_local_dinov2
 
 
@@ -42,8 +42,6 @@ def main():
         config.save_dir,
         config.log_dir,
     )
-    model.load_state_dict(torch.load(config.save_dir / "best.pt", map_location=config.device))
-    save_predictions(model, val_loader, config.device, config.output_dir)
 
 
 if __name__ == "__main__":

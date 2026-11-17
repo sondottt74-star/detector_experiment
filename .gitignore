@@ -5,3 +5,4 @@ log/
 output/
 save/
 *.egg-info/
+cleaned_data/
